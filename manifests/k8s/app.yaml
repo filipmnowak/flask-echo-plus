@@ -1,0 +1,42 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flask-echo-plus
+  labels:
+    app: flask-echo-plus
+spec:
+  ports:
+  - port: 8080
+    name: web
+  clusterIP: None
+  selector:
+    app: flask-echo-plus
+---
+apiVersion: apps/v1beta2
+kind: StatefulSet
+metadata:
+  name: flask-echo-plus
+spec:
+  serviceName: "flask-echo-plus"
+  replicas: 2
+  selector:
+    matchLabels:
+      app: flask-echo-plus
+  template:
+    metadata:
+      labels:
+        app: flask-echo-plus
+    spec:
+      containers:
+      - name: flask-echo-plus
+        imagePullPolicy: IfNotPresent
+        # if already distributed to Docker engines image cache, on
+        # Kubernetes Nodes, else use fully-qualified name pointing to
+        # Docker registry being in use.
+        image: flask-echo-plus:latest
+        command: ["/usr/local/bin/uwsgi"]
+        args: ["--http", ":8080", "--wsgi-file", "/var/www/app/app.py", "--callable", "app"]
+        ports:
+        - containerPort: 8080
+          name: web
